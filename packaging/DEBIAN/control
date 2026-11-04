@@ -1,0 +1,9 @@
+Package: busca-ai
+Version: 0.5.13-1
+Architecture: all
+Maintainer: Encuentra
+Depends: python3, python3-gi, gir1.2-gtk-3.0
+Section: utils
+Priority: optional
+Description: Buscador de archivos y carpetas local y para montajes rclone
+ Busca nombres y metadatos desde una barra GTK con consultas en español.
