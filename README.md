@@ -2,7 +2,7 @@
 
 Buscador de archivos y carpetas para Ubuntu con una barra flotante, consultas en español y soporte para carpetas locales, NAS SMB y montajes rclone.
 
-![Encuentra: búsqueda flotante en Ubuntu](docs/images/captura-02.png)
+![Encuentra en el escritorio de Ubuntu](docs/images/escritorio-20261104-034214.png)
 
 ## Descargar e instalar
 

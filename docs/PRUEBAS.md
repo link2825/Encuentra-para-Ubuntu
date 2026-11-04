@@ -15,3 +15,30 @@ El usuario probó Encuentra en Ubuntu 26.04.1 con GNOME 50.1. Reportó funcionam
 ![Resultados](images/captura-04.png)
 
 Las capturas corresponden al desarrollo; su aspecto puede variar respecto de la última revisión.
+
+## Capturas originales del escritorio
+
+### Búsqueda en el escritorio
+
+![Búsqueda en el escritorio](images/escritorio-20261104-034002.png)
+
+### Búsqueda integrada en Ubuntu (portada)
+
+![Búsqueda integrada en Ubuntu (portada)](images/escritorio-20261104-034214.png)
+
+### Barra flotante
+
+![Barra flotante](images/escritorio-20261104-034618.png)
+
+### Consulta desde la barra flotante
+
+![Consulta desde la barra flotante](images/escritorio-20261104-034658.png)
+
+### Configuración e indexación
+
+![Configuración e indexación](images/escritorio-20261104-034743.png)
+
+### Barra compacta de búsqueda
+
+![Barra compacta de búsqueda](images/escritorio-20261104-035151.png)
+
