@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Actualización del índice de Encuentra
+Exec=/usr/bin/busca-ai --background
+TryExec=/usr/bin/busca-ai
+OnlyShowIn=GNOME;
+NoDisplay=true
