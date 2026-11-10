@@ -368,6 +368,8 @@ def technical_file(path, ext):
     parts = decoded.split("/")
     if decoded.startswith(("/usr/", "/etc/", "/proc/", "/sys/", "/dev/", "/var/", "/boot/", "/opt/")):
         return True
+    if any(part == ".local" for part in parts):
+        return True
     if any(part in {"__pycache__", "node_modules", "$recycle.bin", "#recycle", "site-packages", "dist-packages"} for part in parts):
         return True
     if "softmaker" in parts and any("templates" in part for part in parts):
@@ -375,13 +377,19 @@ def technical_file(path, ext):
     return ext.casefold() in {"pyc", "pyo", "so", "dll", "o", "a", "class", "tmvx", "pmvx", "prvx"}
 
 
-def search(conn, config, filters, limit=100, offset=0, order='name'):
+def search(conn, config, filters, limit=100, offset=0, order='name', kind='all'):
     terms, extensions, begin, end = filters
     roots = {item["path"]: item["mount"] for item in config["roots"]}
     if not roots or not any(filters):
         return []
     clauses = ["root IN (" + ",".join("?" for _ in roots) + ")"]
     args = list(roots)
+    if kind == "files":
+        clauses.append("ext <> ?")
+        args.append(FOLDER_EXT)
+    elif kind == "folders":
+        clauses.append("ext = ?")
+        args.append(FOLDER_EXT)
     if config.get("hide_technical", True):
         conn.create_function("encuentra_technical", 2, technical_file, deterministic=True)
         clauses.append("NOT encuentra_technical(path,ext)")
