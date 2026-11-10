@@ -28,8 +28,10 @@ def normalize(value):
 
 def settings():
     config = json.loads(CONFIG.read_text()) if CONFIG.exists() else {
-        "roots": [], "excludes": [], "model": "", "minutes": 30,
+        "roots": [], "excludes": [], "model": "", "minutes": 30, "search_prefix": "ia",
     }
+
+    config.setdefault("search_prefix", "ia")
 
     # Retire direct API sources while preserving mounted folders and other settings.
     roots = [root for root in config["roots"]
