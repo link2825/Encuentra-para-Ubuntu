@@ -357,7 +357,7 @@ def technical_file(path, ext):
     return ext.casefold() in {"pyc", "pyo", "so", "dll", "o", "a", "class", "tmvx", "pmvx", "prvx"}
 
 
-def search(conn, config, filters):
+def search(conn, config, filters, limit=100, offset=0, order='name'):
     terms, extensions, begin, end = filters
     roots = {item["path"]: item["mount"] for item in config["roots"]}
     if not roots or not any(filters):
@@ -386,9 +386,16 @@ def search(conn, config, filters):
         if date:
             clauses.append(f"modified {operator} ?")
             args.append(dt.datetime.combine(date, dt.time()).timestamp())
+    order_sql = {"name": "ORDER BY (ext = ?) DESC, norm ASC, name ASC, path ASC",
+                 "newest": "ORDER BY modified DESC, norm ASC",
+                 "oldest": "ORDER BY modified ASC, norm ASC"}.get(order)
+    if order_sql is None:
+        order_sql = "ORDER BY (ext = ?) DESC, norm ASC, name ASC, path ASC"
+        order = "name"
+    extra = [FOLDER_EXT] if order == "name" else []
     rows = conn.execute("SELECT root,path,name,modified,ext FROM files WHERE " +
-                        " AND ".join(clauses) + " ORDER BY (ext = ?) DESC, norm ASC, name ASC, path ASC LIMIT 100",
-                        args + [FOLDER_EXT])
+                        " AND ".join(clauses) + " " + order_sql + " LIMIT ? OFFSET ?",
+                        args + extra + [limit, offset])
     mounted_remotes = remote_mounts() if any(map(is_remote, roots)) else []
     available = {path: remote_available(path, mounted_remotes) if is_remote(path)
                  else not mount or mount_for(path) == mount for path, mount in roots.items()}
