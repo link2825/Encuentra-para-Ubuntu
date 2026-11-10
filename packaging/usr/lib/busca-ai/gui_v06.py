@@ -109,18 +109,22 @@ class Launcher(Base):
         kind = "all"
         if natural:
             normalized = engine.normalize(query)
+            if re.search(r"\b(?:solo )?carpetas\b|\b(?:solo )?directorios\b", normalized):
+                kind = "folders"
+            elif re.search(r"\barchivos?\b|\bficheros?\b", normalized):
+                kind = "files"
             if any(term in normalized for term in ("mas reciente", "mas nuevo", "ultimo", "actualizado")):
                 order = "newest"
             elif any(term in normalized for term in ("mas antiguo", "primero")):
                 order = "oldest"
-            query = normalized
+            query = re.sub(r"\b(?:solo )?(?:archivos?|ficheros?|carpetas|directorios)\b", " ", normalized)
             for term in ("mas reciente", "mas nuevo", "ultimo", "ultimos", "actualizado", "mas antiguo", "primero"):
                 query = re.sub(r"(?<!\w)" + term + r"(?!\w)", " ", query, flags=re.IGNORECASE)
             filters, mode = engine.interpret(query, engine.settings()["model"])
         else:
             filters, mode = ([engine.normalize(query)], [], None, None), "Por nombre"
         with engine.database() as conn:
-            rows = engine.search(conn, engine.settings(), filters, limit=101, offset=offset, order=order)
+            rows = engine.search(conn, engine.settings(), filters, limit=101, offset=offset, order=order, kind=kind)
             return [(*row, Base.result_path(conn, row[0])) for row in rows[:100]], mode, len(rows)>100
     def dispatch(self, query, natural):
         self.pending = 0
