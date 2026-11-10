@@ -11,7 +11,7 @@ from gi.repository import Gtk, Gio, Gdk, GLib
 import engine
 import gui
 from gui import Launcher as Base
-gui.VERSION = "0.6.1-1"
+gui.VERSION = "0.6.2-1"
 CSS=b"""
 #encuentra {background:#201e29;border:2px solid #a65ad6;border-radius:18px}
 #search {font-size:19px;min-height:44px;border:2px solid #a65ad6;border-radius:24px;background:#302a38;color:white}
@@ -28,6 +28,8 @@ class Launcher(Base):
         super().do_activate()
         self.window.set_decorated(False)
         self.window.set_skip_taskbar_hint(True)
+        self.settings_button.show()
+        self.folder_button.hide()
     def build(self):
         self.window=Gtk.ApplicationWindow(application=self,title="Encuentra")
         self.window.set_name("encuentra")
@@ -44,7 +46,7 @@ class Launcher(Base):
         self.entry.set_placeholder_text("Buscar aplicaciones, archivos, ajustes y tienda…")
         self.entry.connect("changed",self.changed);self.entry.connect("activate",self.submit)
         header.pack_start(self.entry,True,True,0)
-        self.settings_button=Gtk.Button.new_from_icon_name("emblem-system-symbolic",Gtk.IconSize.BUTTON)
+        self.settings_button=Gtk.Button.new_from_icon_name("preferences-system-symbolic",Gtk.IconSize.BUTTON)
         self.settings_button.connect("clicked",lambda b:self.preferences())
         header.pack_start(self.settings_button,False,False,0)
         self.folder_button=Gtk.Button(label="Abrir carpeta");self.folder_button.set_no_show_all(True)
@@ -60,12 +62,21 @@ class Launcher(Base):
         active=bool(self.entry.get_text().strip())
         self.list_scroll.set_visible(active);self.status.set_visible(active)
         self.window.resize(850,590 if active else 105)
+        if active:
+            GLib.idle_add(self.reset_scroll)
+    def reset_scroll(self):
+        self.list_scroll.get_vadjustment().set_value(0)
+        return False
     def changed(self,*args):
         self.generation+=1;self.serial+=1
         if self.pending:GLib.source_remove(self.pending);self.pending=0
         q=self.entry.get_text().strip()
         self.apps=[];self.files=[];self.shop=[];self.rows.clear()
-        if q and not self.natural(q):
+        if q and self.natural(q):
+            prefix=engine.settings().get('search_prefix','ia')
+            self.status.set_text('Interpretando consulta…')
+            self.pending=GLib.timeout_add(450,self.dispatch,q[len(prefix)+1:].strip(),True)
+        elif q:
             n=engine.normalize(q)
             for app in Gio.AppInfo.get_all():
                 if app.should_show() and n in engine.normalize((app.get_display_name() or "")+" "+(app.get_description() or "")):
@@ -77,7 +88,7 @@ class Launcher(Base):
                 serial=self.serial
                 f=self.worker.submit(self.find_store,q)
                 f.add_done_callback(lambda future:GLib.idle_add(self.store_ready,serial,future))
-        self.status.set_text("Buscando…" if q else "")
+        if not self.natural(q): self.status.set_text("Buscando…" if q else "")
         self.render();self.update_panel()
     @staticmethod
     def find_store(q):
