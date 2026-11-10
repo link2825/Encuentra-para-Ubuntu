@@ -62,11 +62,6 @@ class Launcher(Base):
         active=bool(self.entry.get_text().strip())
         self.list_scroll.set_visible(active);self.status.set_visible(active)
         self.window.resize(850,590 if active else 105)
-        if active:
-            GLib.idle_add(self.reset_scroll)
-    def reset_scroll(self):
-        self.list_scroll.get_vadjustment().set_value(0)
-        return False
     def changed(self,*args):
         self.generation+=1;self.serial+=1
         if self.pending:GLib.source_remove(self.pending);self.pending=0
