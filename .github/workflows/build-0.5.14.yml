@@ -1,4 +1,4 @@
-name: Empaquetar Encuentra 0.6.2
+name: Empaquetar Encuentra 0.6.3
 on:
   push:
     branches: [main]
@@ -17,14 +17,14 @@ jobs:
       - name: Construir DEB
         run: |
           sh ./build-deb.sh
-          dpkg-deb --info dist/encuentra_0.6.2-1_all.deb
-          test "$(dpkg-deb -f dist/encuentra_0.6.2-1_all.deb Version)" = "0.6.2-1"
+          dpkg-deb --info dist/encuentra_0.6.3-1_all.deb
+          test "$(dpkg-deb -f dist/encuentra_0.6.3-1_all.deb Version)" = "0.6.3-1"
       - uses: actions/upload-artifact@v4
         with:
-          name: encuentra-0.6.2-deb
-          path: dist/encuentra_0.6.2-1_all.deb
+          name: encuentra-0.6.3-deb
+          path: dist/encuentra_0.6.3-1_all.deb
       - name: Publicar versión de prueba
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v0.6.2 dist/encuentra_0.6.2-1_all.deb --title "Encuentra 0.6.2 (pruebas)" --notes "Versión de prueba: atajo configurable desde la aplicación y prefijo de búsqueda inteligente ia (editable). Conservar los ajustes e índices existentes." --prerelease --target "$GITHUB_SHA"
+          gh release create v0.6.3 dist/encuentra_0.6.3-1_all.deb --title "Encuentra 0.6.3 (pruebas)" --notes "Versión de prueba: atajo configurable desde la aplicación y prefijo de búsqueda inteligente ia (editable). Conservar los ajustes e índices existentes." --prerelease --target "$GITHUB_SHA"
