@@ -305,14 +305,14 @@ def local_filters(query, today):
                 begin = today - dt.timedelta(days=period)
                 end = begin + dt.timedelta(days=1)
             break
-    relative = re.search(r"\\bultimos? (\\d{1,3}) dias?\\b", phrase)
+    relative = re.search(r"\bultimos? (\d{1,3}) dias?\b", phrase)
     if relative:
         days = int(relative.group(1))
         if 1 <= days <= 365:
             begin = today - dt.timedelta(days=days)
             end = today + dt.timedelta(days=1)
             phrase = phrase.replace(relative.group(0), " ")
-    year = re.search(r"\\b(?:de |del |en )?(20\\d{2})\\b", phrase)
+    year = re.search(r"\b(?:de |del |en )?(20\d{2})\b", phrase)
     if year and begin is None:
         y = int(year.group(1))
         begin, end = dt.date(y, 1, 1), dt.date(y+1, 1, 1)
