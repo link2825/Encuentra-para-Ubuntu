@@ -1,5 +1,5 @@
 Package: busca-ai
-Version: 0.6.2-1
+Version: 0.6.3-1
 Architecture: all
 Maintainer: Encuentra
 Depends: python3, python3-gi, gir1.2-gtk-3.0
