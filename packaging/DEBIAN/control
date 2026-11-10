@@ -1,9 +1,10 @@
-Package: busca-ai
-Version: 0.6.4-1
+Package: encuentra
+Version: 0.8.10-2
 Architecture: all
 Maintainer: Encuentra
-Depends: python3, python3-gi, gir1.2-gtk-3.0
+Depends: python3 (>= 3.10), python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1
 Section: utils
 Priority: optional
-Description: Buscador de archivos y carpetas local y para montajes rclone
- Busca nombres y metadatos desde una barra GTK con consultas en español.
+Description: Encuentra GTK4 - buscador local y de montajes de red
+ Buscador de archivos, aplicaciones y carpetas con motor SQLite existente.
+ Incluye configuracion, accesos directos y menu contextual de pegado.

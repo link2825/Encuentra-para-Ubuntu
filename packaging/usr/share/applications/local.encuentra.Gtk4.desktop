@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Encuentra
+Comment=Buscador de aplicaciones, archivos y carpetas
+Exec=/usr/bin/encuentra
+Icon=encuentra
+Terminal=false
+Categories=Utility;FileTools;
+StartupNotify=true
+Actions=Settings;
+
+[Desktop Action Settings]
+Name=Configuración
+Exec=/usr/bin/encuentra --settings
