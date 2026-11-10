@@ -18,6 +18,12 @@ TYPES = {
     "pdf": ("pdf",), "excel": ("xls", "xlsx", "xlsm", "ods", "csv"),
     "word": ("doc", "docx", "odt"), "imagenes": ("jpg", "jpeg", "png", "webp", "heic"),
     "powerpoint": ("ppt", "pptx", "odp"),
+    "video": ("mp4", "mkv", "avi", "mov", "webm"),
+    "audio": ("mp3", "flac", "wav", "ogg", "m4a"),
+    "zip": ("zip", "7z", "rar", "tar", "gz"),
+    "iso": ("iso",), "txt": ("txt",), "csv": ("csv",),
+    "json": ("json",), "sql": ("sql",),
+    "respaldo": ("bak", "backup", "sql", "zip"),
 }
 
 
@@ -299,6 +305,18 @@ def local_filters(query, today):
                 begin = today - dt.timedelta(days=period)
                 end = begin + dt.timedelta(days=1)
             break
+    relative = re.search(r"\\bultimos? (\\d{1,3}) dias?\\b", phrase)
+    if relative:
+        days = int(relative.group(1))
+        if 1 <= days <= 365:
+            begin = today - dt.timedelta(days=days)
+            end = today + dt.timedelta(days=1)
+            phrase = phrase.replace(relative.group(0), " ")
+    year = re.search(r"\\b(?:de |del |en )?(20\\d{2})\\b", phrase)
+    if year and begin is None:
+        y = int(year.group(1))
+        begin, end = dt.date(y, 1, 1), dt.date(y+1, 1, 1)
+        phrase = phrase.replace(year.group(0), " ")
     extensions = []
     for kind, values in TYPES.items():
         pattern = rf"\b{kind}s?\b"
@@ -306,7 +324,7 @@ def local_filters(query, today):
             extensions.extend(values)
             phrase = re.sub(pattern, "", phrase)
     terms = re.findall(r"[\w-]+", phrase)
-    ignored = "busca buscar encuentra muestra archivos archivo documentos documento los las el la de del que en un una por con y o modificados modificado".split()
+    ignored = "busca buscar encuentra muestra archivos archivo documentos documento los las el la de del que en un una por con y o modificados modificado recientes reciente mas ultimo ultimos".split()
     return [term for term in terms if term not in ignored], extensions, begin, end
 
 
