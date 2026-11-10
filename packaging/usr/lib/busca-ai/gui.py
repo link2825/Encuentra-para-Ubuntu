@@ -16,7 +16,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 import engine
 
 TITLE = "Encuentra"
-VERSION = "0.5.14-dev"
+VERSION = "0.5.14-1"
 QUICK_BINDING = "<Super><Shift>f"
 KEYS = "org.gnome.settings-daemon.plugins.media-keys"
 BINDING_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/busca-ai/"
