@@ -17,7 +17,7 @@ CSS=b"""
 #search {font-size:19px;min-height:44px;border:2px solid #a65ad6;border-radius:24px;background:#302a38;color:white}
 .section {background:#34303e;border-radius:14px;padding:12px}
 .heading {font-weight:bold;font-size:15px}
-.result {background:transparent;border:0;box-shadow:none;text-align:left}
+.result {background:transparent;border:0;box-shadow:none}
 .result:hover {background:#5b456e}
 """
 class Launcher(Base):
