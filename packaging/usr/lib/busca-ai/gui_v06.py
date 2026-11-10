@@ -3,7 +3,7 @@ import sys
 import subprocess
 import shutil
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
@@ -11,7 +11,7 @@ from gi.repository import Gtk, Gio, Gdk, GLib
 import engine
 import gui
 from gui import Launcher as Base
-gui.VERSION = "0.6.3-1"
+gui.VERSION = "0.6.4-1"
 CSS=b"""
 #encuentra {background:#201e29;border:2px solid #a65ad6;border-radius:18px}
 #search {font-size:19px;min-height:44px;border:2px solid #a65ad6;border-radius:24px;background:#302a38;color:white}
@@ -106,6 +106,7 @@ class Launcher(Base):
     def lookup(query, natural, offset=0):
         import re
         order = "name"
+        kind = "all"
         if natural:
             normalized = engine.normalize(query)
             if any(term in normalized for term in ("mas reciente", "mas nuevo", "ultimo", "actualizado")):
