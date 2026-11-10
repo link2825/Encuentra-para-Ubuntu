@@ -1,0 +1,30 @@
+name: Empaquetar Encuentra 0.5.14
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-0.5.14.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar sintaxis
+        run: python3 -m py_compile packaging/usr/lib/busca-ai/gui.py packaging/usr/lib/busca-ai/engine.py
+      - name: Construir DEB
+        run: |
+          sh ./build-deb.sh
+          dpkg-deb --info dist/encuentra_0.5.14-1_all.deb
+          test "$(dpkg-deb -f dist/encuentra_0.5.14-1_all.deb Version)" = "0.5.14-1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encuentra-0.5.14-deb
+          path: dist/encuentra_0.5.14-1_all.deb
+      - name: Publicar versión de prueba
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v0.5.14 dist/encuentra_0.5.14-1_all.deb --title "Encuentra 0.5.14 (pruebas)" --notes "Versión de prueba: atajo configurable desde la aplicación y prefijo de búsqueda inteligente ia (editable). Conservar los ajustes e índices existentes." --prerelease --target "$GITHUB_SHA"
