@@ -102,14 +102,62 @@ class Launcher(Base):
             except Exception:self.shop=[]
             self.render()
         return False
+    @staticmethod
+    def lookup(query, natural, offset=0):
+        import re
+        order = "name"
+        if natural:
+            normalized = engine.normalize(query)
+            if any(term in normalized for term in ("mas reciente", "mas nuevo", "ultimo", "actualizado")):
+                order = "newest"
+            elif any(term in normalized for term in ("mas antiguo", "primero")):
+                order = "oldest"
+            for term in ("mas reciente", "mas nuevo", "ultimo", "ultimos", "actualizado", "mas antiguo", "primero"):
+                query = re.sub(r"(?<!\\w)" + term + r"(?!\\w)", " ", query, flags=re.IGNORECASE)
+            filters, mode = engine.interpret(query, engine.settings()["model"])
+        else:
+            filters, mode = ([engine.normalize(query)], [], None, None), "Por nombre"
+        with engine.database() as conn:
+            rows = engine.search(conn, engine.settings(), filters, limit=101, offset=offset, order=order)
+            return [(*row, Base.result_path(conn, row[0])) for row in rows[:100]], mode, len(rows)>100
+    def dispatch(self, query, natural):
+        self.pending = 0
+        self.generation += 1
+        generation = self.generation
+        self.last_query = (query, natural)
+        job = self.worker.submit(self.lookup, query, natural, 0)
+        job.add_done_callback(lambda future: GLib.idle_add(self.show_results, generation, future))
+        return False
+    def load_more(self, *_):
+        if self.loading_more or not self.has_more or not self.last_query:
+            return
+        self.loading_more = True
+        query, natural = self.last_query
+        generation = self.generation
+        job = self.worker.submit(self.lookup, query, natural, len(self.files))
+        job.add_done_callback(lambda future: GLib.idle_add(self.append_results, generation, future))
+    def append_results(self, generation, future):
+        self.loading_more = False
+        if generation != self.generation:
+            return False
+        try:
+            batch, mode, self.has_more = future.result()
+            self.files.extend(batch)
+            for path, name, date, available, directory, full in batch:
+                self.rows.append(("folder" if directory else "text-x-generic", GLib.markup_escape_text(name), path, directory, GLib.markup_escape_text(full)))
+            self.status.set_text(f"{len(self.apps)} aplicaciones · {len(self.files)} archivos mostrados" + (" · Hay más" if self.has_more else "") + " · " + mode)
+        except Exception as error:
+            self.status.set_text(str(error))
+        self.render()
+        return False
     def show_results(self,generation,future):
         if generation!=self.generation:return False
         try:
-            self.files,mode=future.result()
+            self.files,mode,self.has_more=future.result()
             self.rows.clear()
             for path,name,date,available,directory,full in self.files:
                 self.rows.append(("folder" if directory else "text-x-generic",GLib.markup_escape_text(name),path,directory,GLib.markup_escape_text(full)))
-            self.status.set_text(f"{len(self.apps)} aplicaciones · {len(self.files)} archivos · {mode}")
+            self.status.set_text(f"{len(self.apps)} aplicaciones · {len(self.files)} archivos mostrados"+(" · Hay más" if self.has_more else "")+" · "+mode)
         except Exception as e:self.status.set_text(str(e))
         self.render();self.update_panel()
         return False
