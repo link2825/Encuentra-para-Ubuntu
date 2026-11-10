@@ -16,7 +16,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 import engine
 
 TITLE = "Encuentra"
-VERSION = "0.5.14-1"
+VERSION = "0.5.15-1"
 QUICK_BINDING = "<Super><Shift>f"
 KEYS = "org.gnome.settings-daemon.plugins.media-keys"
 BINDING_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/busca-ai/"
@@ -408,8 +408,11 @@ class Launcher(Gtk.Application):
         box.pack_start(prefix_entry, False, False, 0)
         shortcut_entry = Gtk.Entry()
         shortcut_entry.set_editable(False)
-        shortcut_entry.set_text(self.current_shortcut() or "Sin asignar")
-        chosen = [self.current_shortcut()]
+        shortcut_entry.set_can_focus(True)
+        current = self.current_shortcut()
+        shortcut_entry.set_text(Gtk.accelerator_get_label(*Gtk.accelerator_parse(current)) if current else "Sin asignar")
+        chosen = [current]
+        capturing = [False]
         shortcut_row = Gtk.Box(spacing=6)
         shortcut_row.pack_start(shortcut_entry, True, True, 0)
         capture = Gtk.Button(label="Capturar atajo")
@@ -417,6 +420,13 @@ class Launcher(Gtk.Application):
         box.pack_start(Gtk.Label(label="Atajo global para abrir Encuentra", xalign=0), False, False, 0)
         box.pack_start(shortcut_row, False, False, 0)
         def on_capture_key(widget, event):
+            if not capturing[0]:
+                return False
+            if event.keyval == Gdk.KEY_Escape:
+                capturing[0] = False
+                capture.set_label("Capturar atajo")
+                shortcut_entry.set_text(Gtk.accelerator_get_label(*Gtk.accelerator_parse(chosen[0])) if chosen[0] else "Sin asignar")
+                return True
             modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
             key = Gdk.keyval_to_lower(event.keyval)
             if not Gtk.accelerator_valid(key, modifiers):
@@ -424,13 +434,16 @@ class Launcher(Gtk.Application):
             chosen[0] = Gtk.accelerator_name(key, modifiers)
             shortcut_entry.set_text(Gtk.accelerator_get_label(key, modifiers))
             capture.set_label("Capturar atajo")
-            widget.disconnect_by_func(on_capture_key)
+            capturing[0] = False
             return True
         def begin_capture(widget):
-            widget.set_label("Pulsa combinación…")
-            widget.grab_focus()
-            widget.connect("key-press-event", on_capture_key)
+            capturing[0] = True
+            widget.set_label("Esperando teclas… (Esc cancela)")
+            shortcut_entry.set_text("Pulsa ahora la combinación de teclas")
+            shortcut_entry.grab_focus()
         capture.connect("clicked", begin_capture)
+        dialog.connect("key-press-event", on_capture_key)
+        shortcut_entry.connect("key-press-event", on_capture_key)
         hide_technical = Gtk.CheckButton(label="Ocultar archivos del sistema y de aplicaciones")
         hide_technical.set_active(config.get("hide_technical", True))
         hide_technical.set_tooltip_text("Oculta plantillas de SoftMaker, archivos compilados, dependencias y papeleras. No borra archivos.")
