@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /usr/bin/python3 /usr/lib/busca-ai/gui.py "$@"
+exec /usr/bin/python3 /usr/lib/busca-ai/gui_v06.py "$@"
