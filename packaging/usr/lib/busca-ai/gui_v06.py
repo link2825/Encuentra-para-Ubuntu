@@ -113,7 +113,7 @@ class Launcher(Base):
             elif any(term in normalized for term in ("mas antiguo", "primero")):
                 order = "oldest"
             for term in ("mas reciente", "mas nuevo", "ultimo", "ultimos", "actualizado", "mas antiguo", "primero"):
-                query = re.sub(r"(?<!\\w)" + term + r"(?!\\w)", " ", query, flags=re.IGNORECASE)
+                query = re.sub(r"(?<!\w)" + term + r"(?!\w)", " ", query, flags=re.IGNORECASE)
             filters, mode = engine.interpret(query, engine.settings()["model"])
         else:
             filters, mode = ([engine.normalize(query)], [], None, None), "Por nombre"
