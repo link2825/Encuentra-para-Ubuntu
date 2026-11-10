@@ -202,6 +202,11 @@ class Launcher(Base):
             panel=self.section(f"Archivos y carpetas ({len(self.files)})")
             for i,(path,name,date,available,directory,full) in enumerate(self.files):
                 self.item(panel,name,full if available else "Ubicación no disponible","folder" if directory else "text-x-generic",lambda i=i:self.open_file(i))
+        if self.has_more:
+            panel=self.section("Más resultados")
+            button=Gtk.Button(label="Cargar 100 resultados más")
+            button.connect("clicked",self.load_more)
+            panel.pack_start(button,False,False,0)
         self.sections.show_all()
     def launch_app(self,app):
         try:app.launch([],None);self.window.hide()
