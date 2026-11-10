@@ -273,12 +273,21 @@ def walk(root, excludes, progress=None):
 def local_filters(query, today):
     phrase = normalize(query)
     begin = end = None
+    months_ago = re.search(r"\b(?:de |desde |hace )?(\d{1,2}) meses?\b", phrase)
+    if months_ago:
+        months = int(months_ago.group(1))
+        if 1 <= months <= 120:
+            month_index = today.year * 12 + today.month - 1 - months
+            year, month_zero = divmod(month_index, 12)
+            begin = dt.date(year, month_zero + 1, 1)
+            end = dt.date(year + (month_zero == 11), (month_zero + 1) % 12 + 1, 1)
+            phrase = phrase[:months_ago.start()] + " " + phrase[months_ago.end():]
     for pattern, period in [
         (r"\b(?:el |del )?mes pasado\b", "last"),
         (r"\b(?:este|en este) mes\b", "month"),
         (r"\banteayer\b", 2), (r"\bayer\b", 1), (r"\bhoy\b", 0),
     ]:
-        if re.search(pattern, phrase):
+        if begin is None and re.search(pattern, phrase):
             phrase = re.sub(pattern, "", phrase)
             if period == "last":
                 end = today.replace(day=1)
