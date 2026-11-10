@@ -4,11 +4,14 @@ import subprocess
 import shutil
 from pathlib import Path
 from urllib.parse import quote
+import gi
+gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
 from gi.repository import Gtk, Gio, Gdk, GLib
 import engine
 import gui
 from gui import Launcher as Base
-gui.VERSION = "0.6.0-1"
+gui.VERSION = "0.6.1-1"
 CSS=b"""
 #encuentra {background:#201e29;border:2px solid #a65ad6;border-radius:18px}
 #search {font-size:19px;min-height:44px;border:2px solid #a65ad6;border-radius:24px;background:#302a38;color:white}
