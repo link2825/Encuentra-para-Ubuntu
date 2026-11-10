@@ -11,7 +11,7 @@ from gi.repository import Gtk, Gio, Gdk, GLib
 import engine
 import gui
 from gui import Launcher as Base
-gui.VERSION = "0.6.2-1"
+gui.VERSION = "0.6.3-1"
 CSS=b"""
 #encuentra {background:#201e29;border:2px solid #a65ad6;border-radius:18px}
 #search {font-size:19px;min-height:44px;border:2px solid #a65ad6;border-radius:24px;background:#302a38;color:white}
@@ -23,7 +23,7 @@ CSS=b"""
 class Launcher(Base):
     def __init__(self):
         super().__init__()
-        self.apps=[];self.files=[];self.shop=[];self.serial=0
+        self.apps=[];self.files=[];self.shop=[];self.serial=0;self.has_more=False;self.last_query=None;self.loading_more=False
     def do_activate(self):
         super().do_activate()
         self.window.set_decorated(False)
@@ -66,7 +66,7 @@ class Launcher(Base):
         self.generation+=1;self.serial+=1
         if self.pending:GLib.source_remove(self.pending);self.pending=0
         q=self.entry.get_text().strip()
-        self.apps=[];self.files=[];self.shop=[];self.rows.clear()
+        self.apps=[];self.files=[];self.shop=[];self.rows.clear();self.has_more=False;self.last_query=None
         if q and self.natural(q):
             prefix=engine.settings().get('search_prefix','ia')
             self.status.set_text('Interpretando consulta…')
@@ -152,7 +152,7 @@ class Launcher(Base):
             for app in settings[:5]:self.item(panel,app.get_display_name(),app.get_description() or "",app.get_icon() or "preferences-system",lambda app=app:self.launch_app(app))
         if self.files:
             panel=self.section(f"Archivos y carpetas ({len(self.files)})")
-            for i,(path,name,date,available,directory,full) in enumerate(self.files[:12]):
+            for i,(path,name,date,available,directory,full) in enumerate(self.files):
                 self.item(panel,name,full if available else "Ubicación no disponible","folder" if directory else "text-x-generic",lambda i=i:self.open_file(i))
         self.sections.show_all()
     def launch_app(self,app):
