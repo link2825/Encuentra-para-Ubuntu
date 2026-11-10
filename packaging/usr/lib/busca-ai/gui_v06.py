@@ -207,7 +207,9 @@ class Launcher(Base):
         if self.files:
             panel=self.section(f"Archivos y carpetas ({len(self.files)})")
             for i,(path,name,date,available,directory,full) in enumerate(self.files):
-                self.item(panel,name,full if available else "Ubicación no disponible","folder" if directory else "text-x-generic",lambda i=i:self.open_file(i))
+                stamp=__import__("datetime").datetime.fromtimestamp(date).strftime("%d/%m/%Y %H:%M") if date else "Fecha desconocida"
+                detail=unquote(full)+"  ·  Modificado: "+stamp if available else "Ubicación no disponible"
+                self.item(panel,name,detail,"folder" if directory else "text-x-generic",lambda i=i:self.open_file(i))
         if self.has_more:
             panel=self.section("Más resultados")
             button=Gtk.Button(label="Cargar 100 resultados más")
