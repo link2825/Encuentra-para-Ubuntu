@@ -1,0 +1,45 @@
+name: Construir Encuentra GTK4 DEB
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experimental/gtk4-libadwaita
+    paths:
+      - 'release-gtk4/**'
+      - '.github/workflows/build-encuentra-gtk4.yml'
+
+jobs:
+  deb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comprobar fuentes completas antes de publicar
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s release-gtk4/usr/lib/encuentra/gui_gtk4.py
+          test -s release-gtk4/usr/lib/encuentra/engine.py
+          test -s release-gtk4/usr/bin/encuentra
+          test -s release-gtk4/DEBIAN/control
+          test -s release-gtk4/usr/share/icons/hicolor/256x256/apps/encuentra.png
+          python3 -m py_compile release-gtk4/usr/lib/encuentra/gui_gtk4.py release-gtk4/usr/lib/encuentra/engine.py
+          grep -q '^Package: encuentra$' release-gtk4/DEBIAN/control
+          grep -q '^Version: 0.8.5-1$' release-gtk4/DEBIAN/control
+      - name: Construir y verificar paquete
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          chmod 755 release-gtk4/usr/bin/encuentra
+          dpkg-deb --build --root-owner-group release-gtk4 dist/encuentra_0.8.5-1_all.deb
+          dpkg-deb --info dist/encuentra_0.8.5-1_all.deb
+          dpkg-deb --contents dist/encuentra_0.8.5-1_all.deb
+          sha256sum dist/encuentra_0.8.5-1_all.deb > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encuentra-gtk4-0.8.5
+          path: |
+            dist/encuentra_0.8.5-1_all.deb
+            dist/SHA256SUMS
+          if-no-files-found: error
