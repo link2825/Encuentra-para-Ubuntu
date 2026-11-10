@@ -7,4 +7,4 @@ trap 'rm -rf "$stage"' EXIT HUP INT TERM
 cp -a packaging/. "$stage/"
 chmod 755 "$stage/usr/bin/busca-ai"
 find "$stage" -type d -exec chmod 755 {} +
-dpkg-deb --root-owner-group --build "$stage" dist/encuentra_0.6.3-1_all.deb
+dpkg-deb --root-owner-group --build "$stage" dist/encuentra_0.6.4-1_all.deb
