@@ -16,7 +16,7 @@ from gi.repository import Gdk, Gio, GLib, Gtk
 import engine
 
 TITLE = "Encuentra"
-VERSION = "0.5.13-1"
+VERSION = "0.5.14-dev"
 QUICK_BINDING = "<Super><Shift>f"
 KEYS = "org.gnome.settings-daemon.plugins.media-keys"
 BINDING_PATH = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/busca-ai/"
@@ -106,7 +106,7 @@ class Launcher(Gtk.Application):
         open_folder.connect("clicked", lambda _: self.open_selected(True))
         box.pack_end(open_folder, False, False, 0)
         if engine.settings()["roots"]:
-            self.status.set_text("Escribe para buscar. Pulsa Enter para interpretar una consulta con ai.")
+            self.status.set_text("Escribe para buscar. Usa el prefijo inteligente configurado.")
 
     def update_panel(self):
         has_results = bool(len(self.rows))
@@ -125,6 +125,10 @@ class Launcher(Gtk.Application):
             return True
         return False
 
+    @staticmethod
+    def natural(query):
+        return query.casefold().startswith(engine.settings().get("search_prefix", "ia").casefold() + " ")
+
     def changed(self, *_):
         self.generation += 1
         if self.pending:
@@ -132,22 +136,22 @@ class Launcher(Gtk.Application):
             self.pending = 0
         self.rows.clear()
         query = self.entry.get_text().strip()
-        if query.casefold().startswith("ai "):
+        if self.natural(query):
             self.status.set_text("Pulsa Enter para buscar.")
         elif query:
             self.status.set_text("Buscando…")
             self.pending = GLib.timeout_add(100, self.dispatch, query, False)
         else:
-            self.status.set_text("Escribe un nombre o una consulta que empiece con ai.")
+            self.status.set_text("Escribe un nombre o una consulta con el prefijo configurado.")
         self.update_panel()
 
     def submit(self, *_):
         query = self.entry.get_text().strip()
-        if query.casefold().startswith("ai "):
+        if self.natural(query):
             if len(self.rows):
                 self.open_selected(False)
             else:
-                self.dispatch(query[3:].strip(), True)
+                self.dispatch(query[len(engine.settings().get("search_prefix", "ia")) + 1:].strip(), True)
         elif len(self.rows):
             self.open_selected(False)
 
@@ -399,6 +403,34 @@ class Launcher(Gtk.Application):
             button = Gtk.Button(label=label)
             button.connect("clicked", callback, *args)
             buttons.pack_start(button, False, False, 0)
+        prefix_entry = Gtk.Entry(text=config.get("search_prefix", "ia"))
+        box.pack_start(Gtk.Label(label="Prefijo de búsqueda inteligente (por defecto ia)", xalign=0), False, False, 0)
+        box.pack_start(prefix_entry, False, False, 0)
+        shortcut_entry = Gtk.Entry()
+        shortcut_entry.set_editable(False)
+        shortcut_entry.set_text(self.current_shortcut() or "Sin asignar")
+        chosen = [self.current_shortcut()]
+        shortcut_row = Gtk.Box(spacing=6)
+        shortcut_row.pack_start(shortcut_entry, True, True, 0)
+        capture = Gtk.Button(label="Capturar atajo")
+        shortcut_row.pack_start(capture, False, False, 0)
+        box.pack_start(Gtk.Label(label="Atajo global para abrir Encuentra", xalign=0), False, False, 0)
+        box.pack_start(shortcut_row, False, False, 0)
+        def on_capture_key(widget, event):
+            modifiers = event.state & Gtk.accelerator_get_default_mod_mask()
+            key = Gdk.keyval_to_lower(event.keyval)
+            if not Gtk.accelerator_valid(key, modifiers):
+                return True
+            chosen[0] = Gtk.accelerator_name(key, modifiers)
+            shortcut_entry.set_text(Gtk.accelerator_get_label(key, modifiers))
+            capture.set_label("Capturar atajo")
+            widget.disconnect_by_func(on_capture_key)
+            return True
+        def begin_capture(widget):
+            widget.set_label("Pulsa combinación…")
+            widget.grab_focus()
+            widget.connect("key-press-event", on_capture_key)
+        capture.connect("clicked", begin_capture)
         hide_technical = Gtk.CheckButton(label="Ocultar archivos del sistema y de aplicaciones")
         hide_technical.set_active(config.get("hide_technical", True))
         hide_technical.set_tooltip_text("Oculta plantillas de SoftMaker, archivos compilados, dependencias y papeleras. No borra archivos.")
@@ -427,7 +459,16 @@ class Launcher(Gtk.Application):
             if any(not Path(path).is_absolute() for path in exclusions):
                 message.set_text("Escribe rutas absolutas para las exclusiones.")
                 continue
-            engine.save({"roots": [{"path": row[0], "mount": row[1]} for row in store],
+            prefix = prefix_entry.get_text().strip().casefold()
+            if not prefix or any(c.isspace() for c in prefix):
+                message.set_text("El prefijo debe ser una palabra sin espacios.")
+                continue
+            if chosen[0]:
+                outcome = self.save_shortcut(chosen[0])
+                if outcome != "Atajo guardado.":
+                    message.set_text(outcome)
+                    continue
+            engine.save({"search_prefix": prefix, "roots": [{"path": row[0], "mount": row[1]} for row in store],
                          "excludes": [os.path.normpath(path) for path in exclusions],
                          "model": model.get_text().strip(), "minutes": minutes.get_value_as_int(),
                          "hide_technical": hide_technical.get_active()})
@@ -445,27 +486,43 @@ class Launcher(Gtk.Application):
         dialog.destroy()
 
     @staticmethod
-    def shortcut():
+    def current_shortcut():
         source = Gio.SettingsSchemaSource.get_default()
         if not source.lookup(KEYS, True):
-            return "Abre Configuración de GNOME y asigna Super + Mayús + F al comando busca-ai --quick."
+            return ""
+        keys = Gio.Settings.new(KEYS)
+        if BINDING_PATH not in keys.get_strv("custom-keybindings"):
+            return ""
+        binding = Gio.Settings.new_with_path(KEYS + ".custom-keybinding", BINDING_PATH)
+        return binding.get_string("binding")
+
+    @staticmethod
+    def save_shortcut(accelerator):
+        source = Gio.SettingsSchemaSource.get_default()
+        if not source.lookup(KEYS, True):
+            return "GNOME no ofrece atajos personalizados."
+        key, mods = Gtk.accelerator_parse(accelerator)
+        if not Gtk.accelerator_valid(key, mods):
+            return "Combinación no válida."
         keys = Gio.Settings.new(KEYS)
         paths = keys.get_strv("custom-keybindings")
-        binding = Gio.Settings.new_with_path(KEYS + ".custom-keybinding", BINDING_PATH)
-        accelerator = binding.get_string("binding")
-        if BINDING_PATH not in paths or accelerator in ("", "<Ctrl>space"):
-            accelerator = QUICK_BINDING
         for path in paths:
             if path != BINDING_PATH:
                 other = Gio.Settings.new_with_path(KEYS + ".custom-keybinding", path)
-                if Gtk.accelerator_parse(other.get_string("binding")) == Gtk.accelerator_parse(accelerator):
-                    return "La combinación ya está asignada a otro atajo personalizado en GNOME."
-        if not all([binding.set_string("name", TITLE), binding.set_string("command", "/usr/bin/busca-ai --quick"),
+                if Gtk.accelerator_parse(other.get_string("binding")) == (key, mods):
+                    return "Atajo ya utilizado por otra aplicación."
+        binding = Gio.Settings.new_with_path(KEYS + ".custom-keybinding", BINDING_PATH)
+        if not all((binding.set_string("name", TITLE),
+                    binding.set_string("command", "/usr/bin/busca-ai --quick"),
                     binding.set_string("binding", accelerator),
-                    keys.set_strv("custom-keybindings", list(dict.fromkeys(paths + [BINDING_PATH])))]):
+                    keys.set_strv("custom-keybindings", list(dict.fromkeys(paths + [BINDING_PATH]))))):
             return "GNOME no permitió guardar el atajo."
         Gio.Settings.sync()
-        return "Atajo guardado. Puedes cambiarlo en Configuración de GNOME → Teclado → Atajos personalizados."
+        return "Atajo guardado."
+
+    @staticmethod
+    def shortcut():
+        return Launcher.save_shortcut(Launcher.current_shortcut() or QUICK_BINDING)
 
 
 def progress_file(pid):
